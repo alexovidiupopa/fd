@@ -1,0 +1,196 @@
+%! Author = alexp
+%! Date = 5/4/2025
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{graphicx}
+
+\lstdefinelanguage{JavaScript}{
+    keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
+    keywordstyle=\color{blue}\bfseries,
+    ndkeywords={class, export, boolean, throw, implements, import, this},
+    ndkeywordstyle=\color{darkgray}\bfseries,
+    identifierstyle=\color{black},
+    sensitive=false,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    commentstyle=\color{purple}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    morestring=[b]',
+    morestring=[b]"
+}
+
+% Code block styling
+\lstset{
+    language=JavaScript,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green},
+    stringstyle=\color{red},
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+}
+
+% Document
+\begin{document}
+
+    \title{GeoMap Component Documentation}
+    \author{Alex-Ovidiu POPA}
+    \date{\today}
+    \maketitle
+
+    \section{Introduction}
+    The \texttt{GeoMap} component (Figure \ref{fig:enter-label}) is a React-based interactive map built using the Leaflet library and its React integration (\texttt{react-leaflet}). It provides functionalities such as marker management (adding, editing, deleting), marker clustering, and filtering by name. This document elaborates on each functionality and includes the corresponding code snippets.
+    \begin{figure}
+        \centering
+        \includegraphics[width=1\linewidth]{component.png}
+        \caption{Embedded view of the GeoMap component}
+        \label{fig:enter-label}
+    \end{figure}
+
+    \section{Libraries Used}
+    The following libraries are used in the \texttt{GeoMap} component:
+    \begin{itemize}
+        \item \textbf{Leaflet}: A JavaScript library for interactive maps. (\url{https://leafletjs.com/})
+        \item \textbf{react-leaflet}: React bindings for Leaflet. (\url{https://react-leaflet.js.org/})
+        \item \textbf{react-leaflet-markercluster}: A plugin for clustering markers on the map. (\url{https://github.com/yuzhva/react-leaflet-markercluster})
+        \item \textbf{@changey/react-leaflet-markercluster}: A modern fork of the marker cluster plugin.
+    \end{itemize}
+
+    \section{Main Functionalities}
+    The \texttt{GeoMap} component provides the following features:
+
+    \subsection{Marker Management}
+    \textbf{Description:} Users can add, edit, and delete markers on the map. Markers are stored in the component's state and can be persisted using \texttt{localStorage}.
+
+    \textbf{Add Marker:}
+    Markers can be added by clicking on the map in "Add Marker Mode." The following function handles adding a new marker:
+    \begin{lstlisting}[language=javascript]
+const addMarker = () => {
+if (newMarkerPosition && newMarkerName.trim()) {
+    setMarkers([...markers, { position: newMarkerPosition, name: newMarkerName }]);
+    setNewMarkerPosition(null);
+    setNewMarkerName('');
+}
+};
+    \end{lstlisting}
+
+    \textbf{Edit Marker:}
+    Markers can be edited by selecting them and modifying their name or position:
+    \begin{lstlisting}[language=javascript]
+const saveEditedMarker = () => {
+if (editingMarker !== null && editedPosition) {
+    const updatedMarkers = [...markers];
+    updatedMarkers[editingMarker] = {
+        name: editedName,
+        position: editedPosition,
+    };
+    setMarkers(updatedMarkers);
+    setEditingMarker(null);
+    setEditedName('');
+    setEditedPosition(null);
+}
+};
+    \end{lstlisting}
+
+    \textbf{Delete Marker:}
+    Markers can be removed from the map using the following function:
+    \begin{lstlisting}[language=javascript]
+const deleteMarker = (index: number) => {
+const updatedMarkers = markers.filter((_, i) => i !== index);
+setMarkers(updatedMarkers);
+};
+    \end{lstlisting}
+
+    \subsection{Marker Clustering}
+    \textbf{Description:} Markers are automatically grouped into clusters for better visualization when there are many markers on the map. This is achieved using the \texttt{react-leaflet-markercluster} library.
+
+    \textbf{Implementation:}
+    \begin{lstlisting}[language=javascript]
+<MarkerClusterGroup>
+{filteredMarkers.map((marker, index) => (
+    <Marker key={index} position={marker.position}>
+        <Popup>
+            <p>{marker.name}</p>
+        </Popup>
+    </Marker>
+))}
+</MarkerClusterGroup>
+    \end{lstlisting}
+
+    \subsection{Search Functionality}
+    \textbf{Description:} Users can filter markers by name using a search input. The search query is matched against the marker names.
+
+    \textbf{Implementation:}
+    \begin{lstlisting}[language=javascript]
+const filteredMarkers = markers.filter((marker) =>
+marker.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+    \end{lstlisting}
+
+    \subsection{Mode Switching}
+    \textbf{Description:} The map can toggle between "Add Marker Mode" (for adding markers) and "Move Mode" (for navigating the map). In "Add Marker Mode," dragging is disabled.
+
+    \textbf{Implementation:}
+    \begin{lstlisting}[language=javascript]
+const MapModeHandler: React.FC<{ isAddMarkerMode: boolean }> = ({ isAddMarkerMode }) => {
+const map = useMap();
+
+React.useEffect(() => {
+    if (isAddMarkerMode) {
+        map.dragging.disable();
+    } else {
+        map.dragging.enable();
+    }
+}, [isAddMarkerMode, map]);
+
+return null;
+};
+    \end{lstlisting}
+
+    \subsection{Persistent Storage}
+    \textbf{Description:} Markers can be saved to and loaded from \texttt{localStorage}, ensuring persistence across sessions. Although a trivial approach, this may be replaced in real-world applications with an API call, if desired.
+
+    \textbf{Save Markers:}
+    \begin{lstlisting}[language=javascript]
+const saveMarkers = () => {
+localStorage.setItem('markers', JSON.stringify(markers));
+alert('Markers saved successfully!');
+};
+    \end{lstlisting}
+
+    \textbf{Load Markers:}
+    \begin{lstlisting}[language=javascript]
+useEffect(() => {
+const savedMarkers = localStorage.getItem('markers');
+if (savedMarkers) {
+    setMarkers(JSON.parse(savedMarkers));
+}
+}, []);
+    \end{lstlisting}
+
+    \section{Component Integration}
+
+    In order to integrate the component within a React application, one must simply import it, and use it as shown below:
+
+    \begin{lstlisting}[language=javascript]
+import GeoMap from './components/GeoMap';
+
+const App: React.FC = () => {
+    return (
+        <div>
+            <h1>Geographical Data Map Component</h1>
+            <GeoMap />
+        </div>
+    );
+};
+    \end{lstlisting}
+\end{document}
