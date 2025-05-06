@@ -79,8 +79,21 @@ if (newMarkerPosition && newMarkerName.trim()) {
     setMarkers([...markers, { position: newMarkerPosition, name: newMarkerName }]);
     setNewMarkerPosition(null);
     setNewMarkerName('');
+    setIsAddMarkerMode(false);
 }
 };
+    \end{lstlisting}
+
+    Moreover, a custom function component is needed in order to correctly handle on-map click events, as React's Leaflet does not detect changes at the level of the DOM:
+    \begin{lstlisting}[language=javascript]
+const MapClickHandler: React.FC = () => {
+        useMapEvent('click', (e) => {
+            if (isAddMarkerMode) {
+                setNewMarkerPosition([e.latlng.lat, e.latlng.lng]);
+            }
+        });
+        return null;
+    };
     \end{lstlisting}
 
     \textbf{Edit Marker:}

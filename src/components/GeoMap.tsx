@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 import '@changey/react-leaflet-markercluster/dist/styles.min.css';
-import {useMap} from "react-leaflet";
+import {useMap, useMapEvent} from "react-leaflet";
 
 // Fix for default marker icon issue in Leaflet
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -30,12 +30,11 @@ const MapModeHandler: React.FC<{ isAddMarkerMode: boolean }> = ({ isAddMarkerMod
     return null;
 };
 
-
 const GeoMap: React.FC = () => {
     const [markers, setMarkers] = useState<{ position: [number, number]; name: string }[]>([
         { position: [46.772397, 23.603139], name: 'Dorobantilor' },
         { position: [46.770578, 23.597259], name: 'Teatrul National Cluj-Napoca' },
-        { position: [46.752730, 23.531464], name: 'Vivo Mall' },
+        { position: [46.752730, 23.531464], name: 'Vivo Mall Cluj-Napoca' },
     ]);
     const [editingMarker, setEditingMarker] = useState<number | null>(null);
     const [editedName, setEditedName] = useState<string>('');
@@ -46,12 +45,24 @@ const GeoMap: React.FC = () => {
     const [newMarkerPosition, setNewMarkerPosition] = useState<[number, number] | null>(null);
     const [newMarkerName, setNewMarkerName] = useState<string>('');
 
+
+    const MapClickHandler: React.FC = () => {
+        useMapEvent('click', (e) => {
+            if (isAddMarkerMode) {
+                setNewMarkerPosition([e.latlng.lat, e.latlng.lng]);
+            }
+        });
+        return null;
+    };
+
+
     // Add a new marker
     const addMarker = () => {
         if (newMarkerPosition && newMarkerName.trim()) {
             setMarkers([...markers, { position: newMarkerPosition, name: newMarkerName }]);
             setNewMarkerPosition(null);
             setNewMarkerName('');
+            setIsAddMarkerMode(false);
         }
     };
 
@@ -122,39 +133,26 @@ const GeoMap: React.FC = () => {
             {isAddMarkerMode && (
                 <div style={{ marginBottom: '10px' }}>
                     {newMarkerPosition ? (
-                        <>
-                            <input
-                                type="text"
-                                placeholder="Enter marker name..."
-                                value={newMarkerName}
-                                onChange={(e) => setNewMarkerName(e.target.value)}
-                                style={{ padding: '5px', width: '300px' }}
-                            />
-                            <button onClick={addMarker} style={{ marginLeft: '10px' }}>Add Marker</button>
-                        </>
+                        <p>New marker selected. Fill in the popup form to add.</p>
                     ) : (
-                        <p>Click on the map to select a position for the new marker.</p>
+                        <p style={{color: 'black'}}>Click on the map to select a position for the new marker.</p>
                     )}
                 </div>
-            )
-
-            }
+            )}
             <MapContainer
                 center={[46.772397, 23.603139]}
                 zoom={13}
                 style={{ height: '800px', width: '1400px' }}
-                onClick={(e: unknown) => {
-                    if (isAddMarkerMode) {
-                        setNewMarkerPosition([e.latlng.lat, e.latlng.lng]);
-                    }
-                }}
-                // Disable dragging in add marker mode
             >
+                <MapClickHandler/>
+                // Disable dragging in add marker mode
                 <MapModeHandler isAddMarkerMode={isAddMarkerMode} />
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
+
+
                 <MarkerClusterGroup>
                     {filteredMarkers.map((marker, index) => (
                         <Marker key={index} position={marker.position}>
@@ -212,6 +210,24 @@ const GeoMap: React.FC = () => {
                         </Marker>
                     ))}
                 </MarkerClusterGroup>
+                {isAddMarkerMode && newMarkerPosition && (
+                    <Marker position={newMarkerPosition}>
+                        <Popup>
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Enter marker name..."
+                                    value={newMarkerName}
+                                    onChange={(e) => setNewMarkerName(e.target.value)}
+                                    style={{ padding: '5px', width: '200px' }}
+                                />
+                                <button onClick={addMarker} style={{ marginLeft: '10px' }}>
+                                    Add Marker
+                                </button>
+                            </div>
+                        </Popup>
+                    </Marker>
+                )}
             </MapContainer>
         </div>
     );
